@@ -43,7 +43,6 @@ func processCommand(cmd string) {
 			return len(ele) != 0
 		})
 
-		fmt.Println(out)
 		fmt.Println(strings.Join(out, ""))
 
 	} else {
