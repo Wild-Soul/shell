@@ -17,14 +17,35 @@ func mapFunction[T any, U any](collection []T, f func(T) U) []U {
 	return result
 }
 
+func filterFunction[T any](collection []T, f func(T) bool) []T {
+	var result []T
+
+	for _, ele := range collection {
+		if f(ele) {
+			result = append(result, ele)
+		}
+	}
+
+	return result
+}
+
 func processCommand(cmd string) {
 	if strings.HasPrefix(cmd, "exit") {
 		os.Exit(0)
+
 	} else if strings.HasPrefix(cmd, "echo") {
-		out := mapFunction(strings.Split(cmd, "echo"), func(ele string) string {
-			return strings.Trim(ele, " ")
+
+		elemap := mapFunction(strings.Split(cmd, "echo"), func(ele string) string {
+			return strings.TrimLeft(ele, " ")
 		})
-		fmt.Println(strings.Join(out, " "))
+
+		out := filterFunction(elemap, func(ele string) bool {
+			return len(ele) != 0
+		})
+
+		fmt.Println(out)
+		fmt.Println(strings.Join(out, ""))
+
 	} else {
 		fmt.Println(cmd + ": command not found")
 	}
