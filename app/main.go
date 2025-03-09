@@ -7,6 +7,29 @@ import (
 	"strings"
 )
 
+func mapFunction[T any, U any](collection []T, f func(T) U) []U {
+	var result []U
+
+	for _, ele := range collection {
+		result = append(result, f(ele))
+	}
+
+	return result
+}
+
+func processCommand(cmd string) {
+	if strings.HasPrefix(cmd, "exit") {
+		os.Exit(0)
+	} else if strings.HasPrefix(cmd, "echo") {
+		out := mapFunction(strings.Split(cmd, "echo"), func(ele string) string {
+			return strings.Trim(ele, " ")
+		})
+		fmt.Println(strings.Join(out, " "))
+	} else {
+		fmt.Println(cmd + ": command not found")
+	}
+}
+
 func getUserInput() {
 	// Uncomment this block to pass the first stage
 	fmt.Fprint(os.Stdout, "$ ")
@@ -18,10 +41,7 @@ func getUserInput() {
 		os.Exit(1)
 	}
 	command = command[:len(command)-1]
-	if strings.HasPrefix(command, "exit") {
-		os.Exit(0)
-	}
-	fmt.Println(command + ": command not found")
+	processCommand(command)
 }
 
 func main() {
