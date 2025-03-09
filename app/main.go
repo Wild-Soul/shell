@@ -6,10 +6,7 @@ import (
 	"os"
 )
 
-// Ensures gofmt doesn't remove the "fmt" import in stage 1 (feel free to remove this!)
-var _ = fmt.Fprint
-
-func main() {
+func getUserInput() {
 	// Uncomment this block to pass the first stage
 	fmt.Fprint(os.Stdout, "$ ")
 
@@ -21,4 +18,11 @@ func main() {
 	}
 
 	fmt.Println(command[:len(command)-1] + ": command not found")
+}
+
+func main() {
+	// Start read-eval-print loop.
+	for {
+		getUserInput()
+	}
 }
