@@ -32,28 +32,27 @@ func filterFunction[T any](collection []T, f func(T) bool) []T {
 }
 
 func processCommand(cmd, args string) {
-	newCmd := cmd
-	if cmd == "type" {
-		newCmd = args
-	}
-	if _, ok := supportedCmds[newCmd]; ok {
-		if cmd == "type" {
-			fmt.Println(newCmd + " is a shell builtin")
-		} else {
-			switch newCmd {
-			case "exit":
-				os.Exit(0)
+	if _, ok := supportedCmds[cmd]; ok {
+		switch cmd {
+		case "exit":
+			os.Exit(0)
 
-			case "echo":
-				out := filterFunction(strings.Split(args, " "), func(ele string) bool {
-					return len(ele) != 0
-				})
+		case "echo":
+			out := filterFunction(strings.Split(args, " "), func(ele string) bool {
+				return len(ele) != 0
+			})
 
-				fmt.Println(strings.Join(out, " "))
+			fmt.Println(strings.Join(out, " "))
+
+		case "type":
+			if _, present := supportedCmds[args]; present {
+				fmt.Println(args + " is a shell builtin")
+			} else {
+				fmt.Println(args + ": not found")
 			}
 		}
 	} else {
-		fmt.Println(newCmd + ": command not found")
+		fmt.Println(cmd + ": command not found")
 	}
 }
 
