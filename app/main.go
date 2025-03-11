@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+var supportedCmds map[string]bool
+
 func mapFunction[T any, U any](collection []T, f func(T) U) []U {
 	var result []U
 
@@ -29,22 +31,27 @@ func filterFunction[T any](collection []T, f func(T) bool) []T {
 	return result
 }
 
-func processCommand(cmd string) {
-	if strings.HasPrefix(cmd, "exit") {
-		os.Exit(0)
+func processCommand(cmd, args string) {
+	newCmd := cmd
+	if cmd == "type" {
+		newCmd = args
+	}
+	if _, ok := supportedCmds[newCmd]; ok {
+		if cmd == "type" {
+			fmt.Println(newCmd + " is a shell builtin")
+		} else {
+			switch newCmd {
+			case "exit":
+				os.Exit(0)
 
-	} else if strings.HasPrefix(cmd, "echo") {
+			case "echo":
+				out := filterFunction(strings.Split(args, " "), func(ele string) bool {
+					return len(ele) != 0
+				})
 
-		elemap := mapFunction(strings.Split(cmd, "echo"), func(ele string) string {
-			return strings.TrimLeft(ele, " ")
-		})
-
-		out := filterFunction(elemap, func(ele string) bool {
-			return len(ele) != 0
-		})
-
-		fmt.Println(strings.Join(out, ""))
-
+				fmt.Println(strings.Join(out, " "))
+			}
+		}
 	} else {
 		fmt.Println(cmd + ": command not found")
 	}
@@ -61,10 +68,26 @@ func getUserInput() {
 		os.Exit(1)
 	}
 	command = command[:len(command)-1]
-	processCommand(command)
+	command = strings.Trim(command, " ")
+
+	parts := strings.Fields(command)
+	cmd := parts[0]
+	args := strings.Join(parts[1:], " ")
+	processCommand(cmd, args)
+}
+
+func initSupportedCmds() {
+	supportedCmds = map[string]bool{
+		"echo": true,
+		"type": true,
+		"exit": true,
+	}
 }
 
 func main() {
+	// Init supported commands
+	initSupportedCmds()
+
 	// Start read-eval-print loop.
 	for {
 		getUserInput()
