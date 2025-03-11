@@ -53,7 +53,7 @@ func processCommand(cmd, args string) {
 			}
 		}
 	} else {
-		fmt.Println(cmd + ": command not found")
+		fmt.Println(newCmd + ": command not found")
 	}
 }
 
