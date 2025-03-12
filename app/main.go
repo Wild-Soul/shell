@@ -94,7 +94,8 @@ func initPaths() {
 			filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 				if err != nil {
 					fmt.Println("Error in initPaths: ", err)
-					return fmt.Errorf("error reading file: %w", err)
+					// return fmt.Errorf("error reading file: %w", err)
+					return nil
 				}
 
 				// fmt.Println("Path:", path, " item:", info.Name())
