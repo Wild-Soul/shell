@@ -101,6 +101,9 @@ func initPaths() {
 	var binPathWg sync.WaitGroup // to wait for all goroutines launched
 
 	for _, path := range binPaths {
+		if strings.Contains(strings.ToLower(path), "windows") {
+			continue
+		}
 		binPathWg.Add(1)
 
 		actualMap, _ := commandsInPaths.LoadOrStore(path, make(map[string]bool))
@@ -109,6 +112,7 @@ func initPaths() {
 		// Launch multiple go routines to read filepaths.
 		go func(path string) {
 			// fmt.Println("Starting path:", path)
+			// st := time.Now()
 			defer binPathWg.Done()
 			filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 				if err != nil {
@@ -122,7 +126,8 @@ func initPaths() {
 				}
 				return nil
 			})
-			// fmt.Println("Done with path:", path)
+
+			// fmt.Println("Done with path:", path, time.Since(st))
 		}(path)
 	}
 
