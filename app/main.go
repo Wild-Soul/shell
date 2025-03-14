@@ -28,7 +28,7 @@ func processCommand(cmd string, args []string) {
 			if _, ok := commandsInPath[cmd]; ok {
 				out, err := exec.Command(cmd, args...).Output()
 				if err == nil {
-					fmt.Println(string(out))
+					fmt.Print(string(out))
 					return // found command stop looking
 				} else {
 					fmt.Println("ERROR", err.Error())
