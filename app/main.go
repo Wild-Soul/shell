@@ -16,6 +16,21 @@ var binPaths []string
 // can use map with mutex as well, since sync.Map is more optimized for concurrent reads and not writes.
 var commandsInPaths sync.Map
 
+func getUniqueStrings(stringsList []string) []string {
+	uniqueMap := make(map[string]bool)
+	var uniqueStrings []string
+
+	// Iterate over the strings list
+	for _, str := range stringsList {
+		if _, exists := uniqueMap[str]; !exists {
+			uniqueMap[str] = true
+			uniqueStrings = append(uniqueStrings, str)
+		}
+	}
+
+	return uniqueStrings
+}
+
 func processCommand(cmd string, args []string) {
 	if _, ok := supportedCmds[cmd]; ok {
 
@@ -57,7 +72,6 @@ func processCommand(cmd string, args []string) {
 }
 
 func getUserInput() {
-	// Uncomment this block to pass the first stage
 	fmt.Fprint(os.Stdout, "$ ")
 
 	// Wait for user input
@@ -82,7 +96,8 @@ func initSupportedCmds() {
 }
 
 func initPaths() {
-	binPaths = strings.Split(os.Getenv("PATH"), ":")
+	binPaths = getUniqueStrings(strings.Split(os.Getenv("PATH"), ":"))
+	// fmt.Println("Unique paths:", len(binPaths), strings.Join(binPaths, "\n"))
 	var binPathWg sync.WaitGroup // to wait for all goroutines launched
 
 	for _, path := range binPaths {
@@ -93,12 +108,12 @@ func initPaths() {
 
 		// Launch multiple go routines to read filepaths.
 		go func(path string) {
+			// fmt.Println("Starting path:", path)
 			defer binPathWg.Done()
 			filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 				if err != nil {
 					// fmt.Println("Error in initPaths: ", err)
-					// return fmt.Errorf("error reading file: %w", err)
-					return nil
+					return fmt.Errorf("error reading file: %w", err)
 				}
 
 				// fmt.Println("Path:", path, " item:", info.Name())
@@ -107,6 +122,7 @@ func initPaths() {
 				}
 				return nil
 			})
+			// fmt.Println("Done with path:", path)
 		}(path)
 	}
 
@@ -132,6 +148,7 @@ func main() {
 
 	// wait for all init to happen
 	initWg.Wait()
+
 	// fmt.Println("binPaths", binPaths)
 	// fmt.Println("commandsInPaths:")
 	// commandsInPaths.Range(func(key, value any) bool {
@@ -141,6 +158,7 @@ func main() {
 	// 	return true
 	// })
 
+	// fmt.Println("Shell initialized!")
 	// Start read-eval-print loop.
 	for {
 		getUserInput()
