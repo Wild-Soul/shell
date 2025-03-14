@@ -16,6 +16,47 @@ var binPaths []string
 // can use map with mutex as well, since sync.Map is more optimized for concurrent reads and not writes.
 var commandsInPaths sync.Map
 
+// map of command and it's handler.
+func exitHandler(args []string) {
+	os.Exit(0)
+}
+
+func echoHandler(args []string) {
+	out := filterFunction(args, func(ele string) bool {
+		return len(ele) != 0
+	})
+
+	fmt.Println(strings.Join(out, " "))
+}
+
+func typeHandler(args []string) {
+	targetCmd := args[0]
+	if _, present := supportedCmds[targetCmd]; present {
+		fmt.Println(targetCmd + " is a shell builtin")
+	} else {
+		for _, path := range binPaths {
+			actualMap, _ := commandsInPaths.Load(path)
+			// fmt.Println("Path:", path, actualMap)
+			if actualMap != nil {
+				mapForPath := actualMap.(map[string]bool)
+				if _, present := mapForPath[targetCmd]; present {
+					fmt.Printf("%v is %v/%v\n", targetCmd, path, targetCmd)
+					return
+				}
+			}
+		}
+		fmt.Println(targetCmd + ": not found")
+	}
+}
+
+func getCmdHandler(cmd string) func([]string) {
+	return map[string]func([]string){
+		"exit": exitHandler,
+		"echo": echoHandler,
+		"type": typeHandler,
+	}[cmd]
+}
+
 func getUniqueStrings(stringsList []string) []string {
 	uniqueMap := make(map[string]bool)
 	var uniqueStrings []string
@@ -32,41 +73,23 @@ func getUniqueStrings(stringsList []string) []string {
 }
 
 func processCommand(cmd string, args []string) {
-	if _, ok := supportedCmds[cmd]; ok {
+	handler := getCmdHandler(cmd)
 
-		switch cmd {
-		case "exit":
-			os.Exit(0)
-
-		case "echo":
-			out := filterFunction(args, func(ele string) bool {
-				return len(ele) != 0
-			})
-
-			fmt.Println(strings.Join(out, " "))
-
-		case "type":
-			targetCmd := args[0]
-			if _, present := supportedCmds[targetCmd]; present {
-				fmt.Println(targetCmd + " is a shell builtin")
-			} else {
-				for _, path := range binPaths {
-					actualMap, _ := commandsInPaths.Load(path)
-					// fmt.Println("Path:", path, actualMap)
-					if actualMap != nil {
-						mapForPath := actualMap.(map[string]bool)
-						if _, present := mapForPath[targetCmd]; present {
-							fmt.Printf("%v is %v/%v\n", targetCmd, path, targetCmd)
-							return
-						}
-					}
+	if handler != nil {
+		handler(args)
+	} else { // 2 possibilities: either the cmd is present and can be executed, or not found.
+		for _, path := range binPaths {
+			actualMap, _ := commandsInPaths.Load(path)
+			commandsInPath := actualMap.(map[string]bool)
+			if _, ok := commandsInPath[cmd]; ok {
+				if out, err := exec.Command(cmd, args...).Output(); err == nil {
+					fmt.Println(string(out))
+					return // found command stop looking
 				}
-				fmt.Println(targetCmd + ": not found")
 			}
 		}
-	} else if out, err := exec.Command(cmd, args...).Output(); err == nil {
-		fmt.Println(string(out))
-	} else {
+
+		// Command not found at this point.
 		fmt.Println(cmd + ": command not found")
 	}
 }
@@ -101,9 +124,6 @@ func initPaths() {
 	var binPathWg sync.WaitGroup // to wait for all goroutines launched
 
 	for _, path := range binPaths {
-		if strings.Contains(strings.ToLower(path), "windows") {
-			continue
-		}
 		binPathWg.Add(1)
 
 		actualMap, _ := commandsInPaths.LoadOrStore(path, make(map[string]bool))
@@ -120,7 +140,6 @@ func initPaths() {
 					return fmt.Errorf("error reading file: %w", err)
 				}
 
-				// fmt.Println("Path:", path, " item:", info.Name())
 				if !info.IsDir() {
 					mapForPath[info.Name()] = true
 				}
