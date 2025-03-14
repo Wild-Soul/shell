@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -15,37 +16,41 @@ var binPaths []string
 // can use map with mutex as well, since sync.Map is more optimized for concurrent reads and not writes.
 var commandsInPaths sync.Map
 
-func processCommand(cmd, args string) {
+func processCommand(cmd string, args []string) {
 	if _, ok := supportedCmds[cmd]; ok {
+
 		switch cmd {
 		case "exit":
 			os.Exit(0)
 
 		case "echo":
-			out := filterFunction(strings.Split(args, " "), func(ele string) bool {
+			out := filterFunction(args, func(ele string) bool {
 				return len(ele) != 0
 			})
 
 			fmt.Println(strings.Join(out, " "))
 
 		case "type":
-			if _, present := supportedCmds[args]; present {
-				fmt.Println(args + " is a shell builtin")
+			targetCmd := args[0]
+			if _, present := supportedCmds[targetCmd]; present {
+				fmt.Println(targetCmd + " is a shell builtin")
 			} else {
 				for _, path := range binPaths {
 					actualMap, _ := commandsInPaths.Load(path)
 					// fmt.Println("Path:", path, actualMap)
 					if actualMap != nil {
 						mapForPath := actualMap.(map[string]bool)
-						if _, present := mapForPath[args]; present {
-							fmt.Printf("%v is %v/%v\n", args, path, args)
+						if _, present := mapForPath[targetCmd]; present {
+							fmt.Printf("%v is %v/%v\n", targetCmd, path, targetCmd)
 							return
 						}
 					}
 				}
-				fmt.Println(args + ": not found")
+				fmt.Println(targetCmd + ": not found")
 			}
 		}
+	} else if out, err := exec.Command(cmd, args...).Output(); err == nil {
+		fmt.Println(string(out))
 	} else {
 		fmt.Println(cmd + ": command not found")
 	}
@@ -65,9 +70,7 @@ func getUserInput() {
 	command = strings.Trim(command, " ")
 
 	parts := strings.Fields(command)
-	cmd := parts[0]
-	args := strings.Join(parts[1:], " ")
-	processCommand(cmd, args)
+	processCommand(parts[0], parts[1:])
 }
 
 func initSupportedCmds() {
