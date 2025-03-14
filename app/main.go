@@ -16,62 +16,6 @@ var binPaths []string
 // can use map with mutex as well, since sync.Map is more optimized for concurrent reads and not writes.
 var commandsInPaths sync.Map
 
-// map of command and it's handler.
-func exitHandler(args []string) {
-	os.Exit(0)
-}
-
-func echoHandler(args []string) {
-	out := filterFunction(args, func(ele string) bool {
-		return len(ele) != 0
-	})
-
-	fmt.Println(strings.Join(out, " "))
-}
-
-func typeHandler(args []string) {
-	targetCmd := args[0]
-	if _, present := supportedCmds[targetCmd]; present {
-		fmt.Println(targetCmd + " is a shell builtin")
-	} else {
-		for _, path := range binPaths {
-			actualMap, _ := commandsInPaths.Load(path)
-			// fmt.Println("Path:", path, actualMap)
-			if actualMap != nil {
-				mapForPath := actualMap.(map[string]bool)
-				if _, present := mapForPath[targetCmd]; present {
-					fmt.Printf("%v is %v/%v\n", targetCmd, path, targetCmd)
-					return
-				}
-			}
-		}
-		fmt.Println(targetCmd + ": not found")
-	}
-}
-
-func getCmdHandler(cmd string) func([]string) {
-	return map[string]func([]string){
-		"exit": exitHandler,
-		"echo": echoHandler,
-		"type": typeHandler,
-	}[cmd]
-}
-
-func getUniqueStrings(stringsList []string) []string {
-	uniqueMap := make(map[string]bool)
-	var uniqueStrings []string
-
-	// Iterate over the strings list
-	for _, str := range stringsList {
-		if _, exists := uniqueMap[str]; !exists {
-			uniqueMap[str] = true
-			uniqueStrings = append(uniqueStrings, str)
-		}
-	}
-
-	return uniqueStrings
-}
-
 func processCommand(cmd string, args []string) {
 	handler := getCmdHandler(cmd)
 
@@ -82,9 +26,12 @@ func processCommand(cmd string, args []string) {
 			actualMap, _ := commandsInPaths.Load(path)
 			commandsInPath := actualMap.(map[string]bool)
 			if _, ok := commandsInPath[cmd]; ok {
-				if out, err := exec.Command(cmd, args...).Output(); err == nil {
+				out, err := exec.Command(cmd, args...).Output()
+				if err == nil {
 					fmt.Println(string(out))
 					return // found command stop looking
+				} else {
+					fmt.Println("ERROR", err.Error())
 				}
 			}
 		}

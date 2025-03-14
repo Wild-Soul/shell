@@ -21,3 +21,18 @@ func filterFunction[T any](collection []T, f func(T) bool) []T {
 
 	return result
 }
+
+func getUniqueStrings(stringsList []string) []string {
+	uniqueMap := make(map[string]bool)
+	var uniqueStrings []string
+
+	// Iterate over the strings list
+	for _, str := range stringsList {
+		if _, exists := uniqueMap[str]; !exists {
+			uniqueMap[str] = true
+			uniqueStrings = append(uniqueStrings, str)
+		}
+	}
+
+	return uniqueStrings
+}
