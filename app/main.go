@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -15,31 +14,6 @@ var binPaths []string
 
 // can use map with mutex as well, since sync.Map is more optimized for concurrent reads and not writes.
 var commandsInPaths sync.Map
-
-func processCommand(cmd string, args []string) {
-	handler := getCmdHandler(cmd)
-
-	if handler != nil {
-		handler(args)
-	} else { // 2 possibilities: either the cmd is present and can be executed, or not found.
-		for _, path := range binPaths {
-			actualMap, _ := commandsInPaths.Load(path)
-			commandsInPath := actualMap.(map[string]bool)
-			if _, ok := commandsInPath[cmd]; ok {
-				out, err := exec.Command(cmd, args...).Output()
-				if err == nil {
-					fmt.Print(string(out))
-					return // found command stop looking
-				} else {
-					fmt.Println("ERROR", err.Error())
-				}
-			}
-		}
-
-		// Command not found at this point.
-		fmt.Println(cmd + ": command not found")
-	}
-}
 
 func getUserInput() {
 	fmt.Fprint(os.Stdout, "$ ")
@@ -54,7 +28,11 @@ func getUserInput() {
 	command = strings.Trim(command, " ")
 
 	parts := strings.Fields(command)
-	processCommand(parts[0], parts[1:])
+	cmd := Command{
+		cmd:  parts[0],
+		args: parts[1:],
+	}
+	cmd.processCommand()
 }
 
 func initSupportedCmds() {
