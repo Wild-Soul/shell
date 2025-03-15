@@ -11,6 +11,7 @@ var builtInCmds = map[string]bool{
 	"exit": true,
 	"echo": true,
 	"type": true,
+	"pwd":  true,
 }
 
 // Refactor idea: Create an interface for commands, with methods like Execute and Validate.
@@ -34,22 +35,24 @@ func (c *Command) echoHandler() {
 }
 
 func (c *Command) typeHandler() {
-	targetCmd := c.args[0]
-	if _, present := supportedCmds[targetCmd]; present {
-		fmt.Println(targetCmd + " is a shell builtin")
+	targetCmd := Command{
+		cmd: c.args[0],
+	}
+	if targetCmd.isBuiltinCmd() {
+		fmt.Println(targetCmd.cmd + " is a shell builtin")
 	} else {
 		for _, path := range binPaths {
 			actualMap, _ := commandsInPaths.Load(path)
 			// fmt.Println("Path:", path, actualMap)
 			if actualMap != nil {
 				mapForPath := actualMap.(map[string]bool)
-				if _, present := mapForPath[targetCmd]; present {
-					fmt.Printf("%v is %v/%v\n", targetCmd, path, targetCmd)
+				if _, present := mapForPath[targetCmd.cmd]; present {
+					fmt.Printf("%v is %v/%v\n", targetCmd.cmd, path, targetCmd.cmd)
 					return
 				}
 			}
 		}
-		fmt.Println(targetCmd + ": not found")
+		fmt.Println(targetCmd.cmd + ": not found")
 	}
 }
 
