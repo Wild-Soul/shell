@@ -59,6 +59,15 @@ func (c *Command) typeHandler() {
 
 func (c *Command) changeDirHandler() {
 	targetPath := c.args[0]
+	if len(targetPath) == 0 {
+		targetPath = "~" // If users just does cd we should switch to $HOME path.
+	} else {
+		// check if targetpath starts with ~ . in which case prepend $HOME value to path.
+		if strings.HasPrefix(targetPath, "~") {
+			targetPath = os.Getenv("HOME") + strings.TrimPrefix(targetPath, "~")
+		}
+	}
+
 	if err := os.Chdir(targetPath); err != nil {
 		fmt.Printf("cd: %v: No such file or directory\n", targetPath)
 	}
