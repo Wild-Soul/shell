@@ -12,6 +12,7 @@ var builtInCmds = map[string]bool{
 	"echo": true,
 	"type": true,
 	"pwd":  true,
+	"cd":   true,
 }
 
 // Refactor idea: Create an interface for commands, with methods like Execute and Validate.
@@ -56,6 +57,13 @@ func (c *Command) typeHandler() {
 	}
 }
 
+func (c *Command) changeDirHandler() {
+	targetPath := c.args[0]
+	if err := os.Chdir(targetPath); err != nil {
+		fmt.Printf("cd: %v: No such file or directory\n", targetPath)
+	}
+}
+
 func (c *Command) pwdHandler() error {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -80,6 +88,8 @@ func (c *Command) executeBuiltInCmd() {
 		c.exitHandler()
 	case "pwd":
 		c.pwdHandler()
+	case "cd":
+		c.changeDirHandler()
 	}
 }
 
