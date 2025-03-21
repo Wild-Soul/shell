@@ -25,12 +25,13 @@ func getUserInput() {
 		os.Exit(1)
 	}
 	command = command[:len(command)-1]
-	command = strings.Trim(command, " ")
 
-	parts := strings.Fields(command)
+	command, args := parseCommand(command)
+	// fmt.Println("Parse cmd:", command, args)
+
 	cmd := Command{
-		cmd:  parts[0],
-		args: parts[1:],
+		cmd:  command,
+		args: args,
 	}
 	cmd.processCommand()
 }
